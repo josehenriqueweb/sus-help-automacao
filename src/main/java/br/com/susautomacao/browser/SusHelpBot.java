@@ -40,8 +40,8 @@ public class SusHelpBot {
                 // ==========================================
                 // 0. DATA
                 // ==========================================
-                // Clica no campo de data (placeholder dd/mm/aaaa)
-                page.getByPlaceholder("dd/mm/aaaa").click();
+                // Adicionamos o .first() para ele não se confundir
+                page.getByPlaceholder("dd/mm/aaaa").first().click();
                 page.waitForTimeout(500);
                 
                 // Apaga o que já estiver lá (seleciona tudo e deleta)
@@ -86,7 +86,8 @@ public class SusHelpBot {
                 // ==========================================
                 for (int p = 0; p < procedimentos.size(); p++) {
                     if (p > 0) {
-                        page.locator("button i.fa-plus").click();
+                        // Adicionamos o .last() para ele ignorar o botão do fundo da tela
+                        page.locator("button i.fa-plus").last().click();
                         page.waitForTimeout(1000); 
                     }
                     String codigoProc = procedimentos.get(p).getCodigo();
