@@ -58,12 +58,65 @@ public class SusHelpBot {
                 page.waitForTimeout(1000);
 
                 // ==========================================
-                // 1. CNS
+                // 1. CNS (Com Verificação Inteligente)
                 // ==========================================
                 page.locator("nz-select-top-control:has-text('Digite o nome, CPF ou CNS do cidadão') input").click();
                 page.waitForTimeout(500);
                 page.keyboard().type(cns); 
                 page.waitForTimeout(2000); 
+
+                // Verifica se o sistema exibiu a mensagem de que não encontrou o cidadão
+                boolean naoEncontrado = page.locator("text=Nenhum resultado encontrado").isVisible();
+
+                if (naoEncontrado) {
+                    System.out.println("-> Cidadão não encontrado na base. Realizando cadastro automático...");
+                    
+                    // Clica no botão de cadastrar cidadão
+                    page.locator("button:has-text('Cadastrar cidadão')").click();
+                    page.waitForTimeout(2000); // Espera a tela de cadastro abrir
+
+                    // Preenche o CNS
+                    page.locator("input[placeholder*='000 0000 0000 0000']").fill(cns);
+                    page.waitForTimeout(500);
+
+                    // Preenche o Nome Completo
+                    page.locator("input[placeholder='Nome completo']").fill(pacienteAtual.getPaciente().getNome());
+                    page.waitForTimeout(500);
+
+                    // Preenche a Data de Nascimento
+                    page.locator("input[placeholder='Informe a data']").fill(pacienteAtual.getPaciente().getDataNascimento());
+                    page.waitForTimeout(500);
+                    page.keyboard().press("Tab");
+
+                    // Seleciona o Sexo (Mapeia 'M' para Masculino e 'F' para Feminino)
+                    page.locator("nz-select-top-control:has-text('Informe o sexo')").click();
+                    page.waitForTimeout(500);
+                    String textoSexo = pacienteAtual.getPaciente().getSexo().equalsIgnoreCase("M") ? "Masculino" : "Feminino";
+                    page.locator("nz-option-item:has-text('" + textoSexo + "')").click();
+                    page.waitForTimeout(500);
+
+                    // Seleciona a Cor/Raça (Pardo por padrão)
+                    page.locator("nz-select-top-control:has-text('Informe a cor/raça')").click();
+                    page.waitForTimeout(500);
+                    page.locator("nz-option-item:has-text('Pardo')").click();
+                    page.waitForTimeout(500);
+
+                    // Rola a página para baixo para encontrar o botão de salvar o cadastro
+                    page.evaluate("window.scrollBy(0, 500)");
+                    page.waitForTimeout(1000);
+
+                    // Clica no botão final de Cadastrar
+                    page.locator("button:has-text('Cadastrar')").last().click();
+                    page.waitForTimeout(3000); // Espera o sistema salvar e fechar a modal de cadastro
+                    
+                    // Refaz a busca pelo CNS recém-cadastrado para selecioná-lo na produção
+                    page.locator("nz-select-top-control:has-text('Digite o nome, CPF ou CNS do cidadão') input").click();
+                    page.waitForTimeout(500);
+                    page.keyboard().type(cns);
+                    page.waitForTimeout(2000);
+                }
+
+                // Seleciona o cidadão na lista (seja ele já existente ou recém-cadastrado)
                 page.keyboard().press("ArrowDown"); 
                 page.waitForTimeout(500);
                 page.keyboard().press("Enter");
