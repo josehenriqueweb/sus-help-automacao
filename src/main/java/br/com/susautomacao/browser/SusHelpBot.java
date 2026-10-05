@@ -30,146 +30,155 @@ public class SusHelpBot {
             System.out.println("\n-> Iniciando a digitação...");
             
             for (int i = 0; i < registos.size(); i++) {
-                Registro pacienteAtual = registos.get(i);
-                String cns = pacienteAtual.getPaciente().getCns();
-                String data = pacienteAtual.getDataAtendimento(); // Pega a data que extraímos
-                List<Procedimento> procedimentos = pacienteAtual.getProcedimentos();
-                
-                System.out.println("Digitando paciente " + (i + 1) + " de " + registos.size() + ": " + pacienteAtual.getPaciente().getNome() + " (Data: " + data + ")");
                 
                 // ==========================================
-                // 0. DATA
+                // INÍCIO DA BLINDAGEM (TRY)
                 // ==========================================
-                // Adicionamos o .first() para ele não se confundir
-                page.getByPlaceholder("dd/mm/aaaa").first().click();
-                page.waitForTimeout(500);
-                
-                // Apaga o que já estiver lá (seleciona tudo e deleta)
-                page.keyboard().press("Control+A");
-                page.keyboard().press("Backspace");
-                page.waitForTimeout(500);
-                
-                // Digita a data nova
-                page.keyboard().type(data);
-                page.waitForTimeout(1000);
-                
-                // Muito importante: Aperta TAB (não Enter!) para sair do campo
-                page.keyboard().press("Tab");
-                page.waitForTimeout(1000);
-
-                // ==========================================
-                // 1. CNS (Com Verificação Inteligente)
-                // ==========================================
-                page.locator("nz-select-top-control:has-text('Digite o nome, CPF ou CNS do cidadão') input").click();
-                page.waitForTimeout(500);
-                page.keyboard().type(cns); 
-                page.waitForTimeout(2000); 
-
-                // Verifica se o sistema exibiu a mensagem de que não encontrou o cidadão
-                boolean naoEncontrado = page.locator("text=Nenhum resultado encontrado").isVisible();
-
-                if (naoEncontrado) {
-                    System.out.println("-> Cidadão não encontrado na base. Realizando cadastro automático...");
+                try {
+                    Registro pacienteAtual = registos.get(i);
+                    String cns = pacienteAtual.getPaciente().getCns();
+                    String data = pacienteAtual.getDataAtendimento(); 
+                    List<Procedimento> procedimentos = pacienteAtual.getProcedimentos();
                     
-                    // Clica no botão de cadastrar cidadão
-                    page.locator("button:has-text('Cadastrar cidadão')").click();
-                    page.waitForTimeout(2000); // Espera a tela de cadastro abrir
-
-                    // Preenche o CNS
-                    page.locator("input[placeholder*='000 0000 0000 0000']").fill(cns);
+                    System.out.println("Digitando paciente " + (i + 1) + " de " + registos.size() + ": " + pacienteAtual.getPaciente().getNome() + " (Data: " + data + ")");
+                    
+                    // ==========================================
+                    // 0. DATA
+                    // ==========================================
+                    page.getByPlaceholder("dd/mm/aaaa").first().click();
                     page.waitForTimeout(500);
-
-                    // Preenche o Nome Completo
-                    page.locator("input[placeholder='Nome completo']").fill(pacienteAtual.getPaciente().getNome());
+                    
+                    page.keyboard().press("Control+A");
+                    page.keyboard().press("Backspace");
                     page.waitForTimeout(500);
-
-                    // Preenche a Data de Nascimento
-                    page.locator("input[placeholder='Informe a data']").fill(pacienteAtual.getPaciente().getDataNascimento());
-                    page.waitForTimeout(500);
+                    
+                    page.keyboard().type(data);
+                    page.waitForTimeout(1000);
+                    
                     page.keyboard().press("Tab");
-
-                    // Seleciona o Sexo (Mapeia 'M' para Masculino e 'F' para Feminino)
-                    page.locator("nz-select-top-control:has-text('Informe o sexo')").click();
-                    page.waitForTimeout(500);
-                    String textoSexo = pacienteAtual.getPaciente().getSexo().equalsIgnoreCase("M") ? "Masculino" : "Feminino";
-                    page.locator("nz-option-item:has-text('" + textoSexo + "')").click();
-                    page.waitForTimeout(500);
-
-                    // Seleciona a Cor/Raça (Pardo por padrão)
-                    page.locator("nz-select-top-control:has-text('Informe a cor/raça')").click();
-                    page.waitForTimeout(500);
-                    page.locator("nz-option-item:has-text('Pardo')").click();
-                    page.waitForTimeout(500);
-
-                    // Rola a página para baixo para encontrar o botão de salvar o cadastro
-                    page.evaluate("window.scrollBy(0, 500)");
                     page.waitForTimeout(1000);
 
-                    // Clica no botão final de Cadastrar
-                    page.locator("button:has-text('Cadastrar')").last().click();
-                    page.waitForTimeout(3000); // Espera o sistema salvar e fechar a modal de cadastro
-                    
-                    // Refaz a busca pelo CNS recém-cadastrado para selecioná-lo na produção
+                    // ==========================================
+                    // 1. CNS (Com Espera Dinâmica e Clique Forçado)
+                    // ==========================================
                     page.locator("nz-select-top-control:has-text('Digite o nome, CPF ou CNS do cidadão') input").click();
                     page.waitForTimeout(500);
-                    page.keyboard().type(cns);
-                    page.waitForTimeout(2000);
-                }
+                    page.keyboard().type(cns); 
+                    
+                    page.waitForTimeout(3500); 
 
-                // Seleciona o cidadão na lista (seja ele já existente ou recém-cadastrado)
-                page.keyboard().press("ArrowDown"); 
-                page.waitForTimeout(500);
-                page.keyboard().press("Enter");
-                page.waitForTimeout(1500); 
-                
-                // ==========================================
-                // 2. PROFISSIONAL
-                // ==========================================
-                page.keyboard().press("Tab");
-                page.waitForTimeout(500);
-                page.keyboard().type("LARICE LEITE");
-                page.waitForTimeout(1500); 
-                page.keyboard().press("ArrowDown");
-                page.waitForTimeout(500);
-                page.keyboard().press("Enter");
-                page.waitForTimeout(1000);
+                    boolean naoEncontrado = page.locator("text=Nenhum resultado encontrado").isVisible();
 
-                // ==========================================
-                // 3. PROCEDIMENTOS
-                // ==========================================
-                for (int p = 0; p < procedimentos.size(); p++) {
-                    if (p > 0) {
-                        // Adicionamos o .last() para ele ignorar o botão do fundo da tela
-                        page.locator("button i.fa-plus").last().click();
-                        page.waitForTimeout(1000); 
+                    if (naoEncontrado) {
+                        System.out.println("-> Cidadão não encontrado na base. Realizando cadastro automático...");
+                        
+                        page.locator("button:has-text('Cadastrar cidadão')").click();
+                        page.waitForTimeout(2000); 
+
+                        page.locator("input[placeholder*='000 0000 0000 0000']").fill(cns);
+                        page.waitForTimeout(500);
+
+                        page.locator("input[placeholder='Nome completo']").fill(pacienteAtual.getPaciente().getNome());
+                        page.waitForTimeout(500);
+
+                        page.locator("input[placeholder='Informe a data']").fill(pacienteAtual.getPaciente().getDataNascimento());
+                        page.waitForTimeout(500);
+                        page.keyboard().press("Tab");
+
+                        page.locator("nz-select-top-control:has-text('Informe o sexo')").click();
+                        page.waitForTimeout(500);
+                        String textoSexo = pacienteAtual.getPaciente().getSexo().equalsIgnoreCase("M") ? "Masculino" : "Feminino";
+                        page.locator("nz-option-item:has-text('" + textoSexo + "')").click();
+                        page.waitForTimeout(500);
+
+                        page.locator("nz-select-top-control:has-text('Informe a cor/raça')").click();
+                        page.waitForTimeout(500);
+                        page.locator("nz-option-item:has-text('Parda')").click();
+                        page.waitForTimeout(500);
+
+                        page.waitForTimeout(1000);
+                        page.locator("button:has-text('Cadastrar')").last().evaluate("node => node.click()");
+                        
+                        page.waitForTimeout(3500); 
+                        
+                        page.locator("nz-select-top-control:has-text('Digite o nome, CPF ou CNS do cidadão') input").click();
+                        page.waitForTimeout(500);
+                        page.keyboard().type(cns);
+                        page.waitForTimeout(3500); 
                     }
-                    String codigoProc = procedimentos.get(p).getCodigo();
-                    page.locator("nz-select-top-control:has-text('Pesquise por Código ou Descrição do Procedimento') input").last().click();
+
+                    page.keyboard().press("ArrowDown"); 
                     page.waitForTimeout(500);
-                    page.keyboard().type(codigoProc);
-                    page.waitForTimeout(2000); 
+                    page.keyboard().press("Enter");
+                    page.waitForTimeout(1500);
+                    
+                    // ==========================================
+                    // 2. PROFISSIONAL
+                    // ==========================================
+                    page.keyboard().press("Tab");
+                    page.waitForTimeout(500);
+                    page.keyboard().type("LARICE LEITE");
+                    page.waitForTimeout(1500); 
                     page.keyboard().press("ArrowDown");
                     page.waitForTimeout(500);
                     page.keyboard().press("Enter");
-                }
-                
-                // ==========================================
-                // 4. SALVAR E CONFIRMAR
-                // ==========================================
-                page.waitForTimeout(1000);
-                page.locator("button:has-text('Adicionar')").click();
-                
-                page.waitForTimeout(1000); 
-                page.locator("button:has-text('Confirmar')").click(); 
-                
-                System.out.println("-> Paciente salvo com sucesso!");
-                
-                page.waitForTimeout(3000); 
-                
-                // 5. Clica em "Registrar" para reabrir a janela para o próximo paciente
-                if (i < registos.size() - 1) {
-                    page.locator("button:has-text('Registrar')").first().click();
-                    page.waitForTimeout(2500); 
+                    page.waitForTimeout(1000);
+
+                    // ==========================================
+                    // 3. PROCEDIMENTOS
+                    // ==========================================
+                    for (int p = 0; p < procedimentos.size(); p++) {
+                        if (p > 0) {
+                            page.locator("button i.fa-plus").last().click();
+                            page.waitForTimeout(1000); 
+                        }
+                        String codigoProc = procedimentos.get(p).getCodigo();
+                        page.locator("nz-select-top-control:has-text('Pesquise por Código ou Descrição do Procedimento') input").last().click();
+                        page.waitForTimeout(500);
+                        page.keyboard().type(codigoProc);
+                        page.waitForTimeout(2000); 
+                        page.keyboard().press("ArrowDown");
+                        page.waitForTimeout(500);
+                        page.keyboard().press("Enter");
+                    }
+                    
+                    // ==========================================
+                    // 4. SALVAR E CONFIRMAR
+                    // ==========================================
+                    page.waitForTimeout(1000);
+                    page.locator("button:has-text('Adicionar')").click();
+                    
+                    page.waitForTimeout(1000); 
+                    page.locator("button:has-text('Confirmar')").click(); 
+                    
+                    System.out.println("-> Paciente salvo com sucesso!");
+                    page.waitForTimeout(3000); 
+                    
+                    // ==========================================
+                    // 5. REABRIR JANELA (COM CLIQUE FORÇADO JS)
+                    // ==========================================
+                    if (i < registos.size() - 1) {
+                        page.locator("button:has-text('Registrar')").first().evaluate("node => node.click()");
+                        page.waitForTimeout(2500); 
+                    }
+
+                } catch (Exception e) {
+                    // ==========================================
+                    // FIM DA BLINDAGEM (CATCH) - SE DER ERRO CAI AQUI
+                    // ==========================================
+                    System.out.println("-> ⚠️ ERRO NO SISTEMA (Paciente " + (i + 1) + "). Limpando tela e pulando para o próximo...");
+                    
+                    // Aperta 'ESC' duas vezes para forçar o fecho de qualquer janela/mensagem travada
+                    page.keyboard().press("Escape");
+                    page.waitForTimeout(1000);
+                    page.keyboard().press("Escape");
+                    page.waitForTimeout(1000);
+                    
+                    // Tenta reabrir a janela para o próximo paciente (também com clique forçado JS)
+                    if (i < registos.size() - 1) {
+                        page.locator("button:has-text('Registrar')").first().evaluate("node => node.click()");
+                        page.waitForTimeout(2500);
+                    }
                 }
             }
             
